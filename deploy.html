@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deploy Countdown</title>
+    <style>
+        /* --- ส่วนของ CSS: ปรับแต่งหน้าตาตรงนี้ --- */
+        body {
+            background-color: #1a1a2e; /* สีพื้นหลัง */
+            color: #e0e0e0; /* สีตัวอักษรหลัก */
+            font-family: 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            overflow: hidden; /* ป้องกัน scrollbar ที่ไม่ต้องการ */
+        }
+
+        #countdown-container {
+            transform: scale(1.5); /* ขยายขนาดทั้งหมด */
+            z-index: 10;
+        }
+
+        h1 {
+            color: #fca311; /* สีหัวข้อ */
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .status-message {
+            font-size: 2rem;
+            color: #ffffff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .spin-rocket {
+            display: inline-block;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        #motivational-ticker {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            width: 100%;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fca311;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            z-index: 10;
+        }
+        
+        /* --- CSS สำหรับปุ่ม + และ Modal (ปรับปรุงใหม่) --- */
+        #open-modal-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background-color: #fca311;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 50%;
+            font-size: 2.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+            z-index: 100;
+        }
+        #open-modal-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal-content {
+            background-color: #1f1f3a;
+            padding: 30px 40px;
+            border-radius: 15px;
+            border: 2px solid #fca311;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #fca311;
+        }
+
+        #new-message-input {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #fca311;
+            border-radius: 8px;
+            color: #ffffff;
+            padding: 12px 15px;
+            font-size: 1.1rem;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .modal-btn {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        #add-message-btn {
+            background-color: #fca311;
+            color: #1a1a2e;
+        }
+        #close-modal-btn {
+            background-color: #555;
+            color: #fff;
+        }
+
+
+        /* --- CSS สำหรับ Confetti (ยังคงอยู่) --- */
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background-color: #fca311;
+            top: -50px;
+            opacity: 1;
+            animation: confetti-fall 4s ease-out forwards;
+            z-index: 20;
+        }
+
+        @keyframes confetti-fall {
+            0% { transform: translateY(0) rotateZ(0); opacity: 1; }
+            100% { transform: translateY(110vh) rotateZ(720deg); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="countdown-container">
+        <div id="deployment-status">
+            <h1> DEPLOYING TO PRODUCTION </span></h1>
+            <h1> <span class="spin-rocket">🚀</span> </h1>
+            <p class="status-message">Please wait... Deployment in progress (<span id="deploy-timer"></span>)</p>
+        </div>
+    </div>
+
+    <div id="motivational-ticker"></div>
+
+    <!-- ปุ่ม + ที่มุมขวาล่าง (เพิ่มเข้ามาใหม่) -->
+    <button id="open-modal-btn">+</button>
+
+    <!-- Modal สำหรับเพิ่มข้อความ (เพิ่มเข้ามาใหม่) -->
+    <div id="add-message-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Add a new message</h2>
+            <input type="text" id="new-message-input" placeholder="Type a message and press Enter...">
+            <div class="modal-actions">
+                <button id="add-message-btn" class="modal-btn">Add</button>
+                <button id="close-modal-btn" class="modal-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // แก้ไข: ห่อหุ้มโค้ดทั้งหมดด้วย DOMContentLoaded เพื่อให้แน่ใจว่า DOM โหลดเสร็จก่อน
+        document.addEventListener("DOMContentLoaded", function() {
+            // --- ส่วนของ JavaScript: ควบคุมการทำงานตรงนี้ ---
+
+            const today = new Date();
+            const deployEndDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 17, 30, 0).getTime();
+
+            const x = setInterval(function() {
+                const now = new Date().getTime();
+                const distance = deployEndDate - now;
+
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                const formatTime = (time) => time < 10 ? `0${time}` : time;
+                
+                document.getElementById("deploy-timer").innerText = `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+
+                if (distance < 0) {
+                    clearInterval(x);
+                    document.getElementById("deployment-status").innerHTML = "<h1>🎉 DEPLOYMENT COMPLETE! 🎉</h1>";
+                    document.getElementById("motivational-ticker").style.display = 'none';
+                    document.getElementById("open-modal-btn").style.display = 'none'; // ซ่อนปุ่ม + ด้วย
+                    launchConfetti();
+                }
+            }, 1000);
+
+            // --- โค้ดสำหรับข้อความวิ่งๆ (ปรับปรุงใหม่เป็นแบบคิว) ---
+            const messages = [];
+            let currentMessageIndex = 0;
+            const tickerElement = document.getElementById("motivational-ticker");
+
+            function showNextMessage() {
+                // ถ้าไม่มีข้อความในคิว ก็ไม่ต้องทำอะไร
+                if (messages.length === 0) {
+                    tickerElement.style.opacity = 0;
+                    return;
+                }
+
+                // วนกลับไปที่ข้อความแรกถ้าแสดงจนครบแล้ว
+                if (currentMessageIndex >= messages.length) {
+                    currentMessageIndex = 0;
+                }
+
+                // แสดงข้อความตามคิวปัจจุบัน
+                tickerElement.innerText = messages[currentMessageIndex];
+                tickerElement.style.opacity = 1;
+
+                // ซ่อนข้อความหลังจากผ่านไป 3.5 วินาที
+                setTimeout(() => {
+                    tickerElement.style.opacity = 0;
+                }, 3500);
+
+                // เลื่อนไปยังคิวถัดไปเพื่อรอแสดงผลในรอบหน้า
+                currentMessageIndex++;
+            }
+
+            // ตั้งค่าให้แสดงข้อความถัดไปทุก 4 วินาที
+            setInterval(showNextMessage, 4000);
+            
+            // --- โค้ดสำหรับ Modal เพิ่มข้อความ (ปรับปรุงใหม่) ---
+            const openModalBtn = document.getElementById("open-modal-btn");
+            const closeModalBtn = document.getElementById("close-modal-btn");
+            const addMessageModal = document.getElementById("add-message-modal");
+            const newMessageInput = document.getElementById("new-message-input");
+            const addMessageBtn = document.getElementById("add-message-btn");
+
+            openModalBtn.addEventListener("click", () => {
+                addMessageModal.classList.remove("hidden");
+                newMessageInput.focus();
+            });
+
+            closeModalBtn.addEventListener("click", () => {
+                addMessageModal.classList.add("hidden");
+            });
+
+            addMessageModal.addEventListener("click", (event) => {
+                if (event.target === addMessageModal) {
+                    addMessageModal.classList.add("hidden");
+                }
+            });
+
+            function addNewMessage() {
+                const newMessage = newMessageInput.value.trim();
+                if (newMessage) {
+                    const isFirstMessage = messages.length === 0;
+                    messages.push(newMessage);
+                    newMessageInput.value = "";
+                    addMessageModal.classList.add("hidden");
+                    
+                    // ถ้าเป็นข้อความแรกที่ถูกเพิ่มเข้ามา ให้แสดงทันที ไม่ต้องรอรอบ 4 วินาที
+                    if (isFirstMessage) {
+                        showNextMessage();
+                    }
+                }
+            }
+
+            addMessageBtn.addEventListener("click", addNewMessage);
+            newMessageInput.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    addNewMessage();
+                }
+            });
+
+            // --- โค้ดสำหรับ Confetti (ยังคงอยู่) ---
+            function launchConfetti() {
+                const confettiColors = ['#fca311', '#e0e0e0', '#1e90ff', '#ff69b4', '#32cd32'];
+                for (let i = 0; i < 150; i++) {
+                    const piece = document.createElement('div');
+                    piece.classList.add('confetti-piece');
+                    const randomColor = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                    piece.style.backgroundColor = randomColor;
+                    piece.style.left = Math.random() * 100 + 'vw';
+                    piece.style.animationDelay = Math.random() * 0.5 + 's';
+                    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    document.body.appendChild(piece);
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

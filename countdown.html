@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deploy Countdown</title>
+    <style>
+        /* --- ส่วนของ CSS: ปรับแต่งหน้าตาตรงนี้ --- */
+        body {
+            background-color: #1a1a2e; /* สีพื้นหลัง */
+            color: #e0e0e0; /* สีตัวอักษรหลัก */
+            font-family: 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            overflow: hidden; /* ป้องกัน scrollbar ที่ไม่ต้องการ */
+        }
+
+        #countdown-container {
+            transform: scale(1.5); /* ขยายขนาดทั้งหมด */
+            z-index: 10;
+        }
+
+        h1 {
+            color: #fca311; /* สีหัวข้อ */
+            font-size: 4rem;
+            margin-bottom: 2rem;
+        }
+
+        .time-box {
+            display: inline-block;
+            margin: 0 1.5rem;
+        }
+
+        .time-value {
+            font-size: 6rem; /* ขนาดตัวเลข */
+            font-weight: bold;
+            line-height: 1;
+            color: #ffffff;
+        }
+
+        .time-label {
+            font-size: 1.5rem; /* ขนาดป้ายกำกับ (วัน, ชั่วโมง) */
+            text-transform: uppercase;
+            color: #a0a0a0;
+        }
+
+        #motivational-ticker {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            width: 100%;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fca311;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            z-index: 10;
+        }
+
+        /* --- CSS สำหรับ Confetti (ยังคงอยู่) --- */
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background-color: #fca311;
+            top: -50px;
+            opacity: 1;
+            animation: confetti-fall 4s ease-out forwards;
+            z-index: 20; /* ให้อยู่หน้าสุด */
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(0) rotateZ(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(110vh) rotateZ(720deg);
+                opacity: 0;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="countdown-container">
+        <h1>🚀 Production Deploy In...</h1>
+        <div id="timer">
+            <div class="time-box">
+                <span id="days" class="time-value">00</span>
+                <span class="time-label">Days</span>
+            </div>
+            <div class="time-box">
+                <span id="hours" class="time-value">00</span>
+                <span class="time-label">Hours</span>
+            </div>
+            <div class="time-box">
+                <span id="minutes" class="time-value">00</span>
+                <span class="time-label">Minutes</span>
+            </div>
+            <div class="time-box">
+                <span id="seconds" class="time-value">00</span>
+                <span class="time-label">Seconds</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="motivational-ticker"></div>
+
+    <script>
+        // --- ส่วนของ JavaScript: ควบคุมการทำงานตรงนี้ ---
+
+        const today = new Date();
+        const countDownDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 17, 0, 0).getTime();
+
+        const x = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = countDownDate - now;
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            const formatTime = (time) => time < 10 ? `0${time}` : time;
+
+            document.getElementById("days").innerText = formatTime(days);
+            document.getElementById("hours").innerText = formatTime(hours);
+            document.getElementById("minutes").innerText = formatTime(minutes);
+            document.getElementById("seconds").innerText = formatTime(seconds);
+
+            if (distance < 0) {
+                clearInterval(x);
+                document.getElementById("timer").innerHTML = "<h1>🎉 DEPLOYED! 🎉</h1>";
+                document.getElementById("motivational-ticker").style.display = 'none';
+                launchConfetti(); // ฉลองด้วย Confetti!
+            }
+        }, 1000);
+
+        // --- โค้ดสำหรับข้อความวิ่งๆ ---
+        // เพิ่มข้อความใหม่เข้าไปในรายการนี้
+        const messages = [
+            "Fighting!",
+            "สู้ๆ พี่เบล",
+            "Almost there...",
+            "Code is compiling...",
+            "อีกนิดเดียว!",
+            "Why my crush not texts to me.",
+            "To Production! 🚀",
+            "การ์ดดดดดดดดดดดดดดด",
+            "โอ้ยน้อ",
+            "การ์ตูนรักพี่เบลล์",
+            "RUBY CHAAN HAIII NANI GA SUKI CHOCO MINTO YORI MO ANATA",
+            "Unikwan",
+            "I Carddddddd",
+            "พี่ปุ่น"
+        ];
+        const tickerElement = document.getElementById("motivational-ticker");
+        function showRandomMessage() {
+            const randomIndex = Math.floor(Math.random() * messages.length);
+            tickerElement.innerText = messages[randomIndex];
+            tickerElement.style.opacity = 1;
+            setTimeout(() => { tickerElement.style.opacity = 0; }, 3000);
+        }
+        showRandomMessage();
+        setInterval(showRandomMessage, 4000);
+
+        // --- โค้ดสำหรับ Emoji Rain (ถูกลบออกแล้ว) ---
+
+        // --- โค้ดสำหรับ Confetti (ยังคงอยู่) ---
+        function launchConfetti() {
+            const confettiColors = ['#fca311', '#e0e0e0', '#1e90ff', '#ff69b4', '#32cd32'];
+            for (let i = 0; i < 150; i++) {
+                const piece = document.createElement('div');
+                piece.classList.add('confetti-piece');
+                const randomColor = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                piece.style.backgroundColor = randomColor;
+                piece.style.left = Math.random() * 100 + 'vw';
+                piece.style.animationDelay = Math.random() * 0.5 + 's';
+                piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+                document.body.appendChild(piece);
+            }
+        }
+    </script>
+
+</body>
+</html>
